@@ -7,7 +7,6 @@
 
 [functions]
   directory = "netlify/functions"
-  python_tokenizer = "lib"
 
 # This redirect maps calls from the client side (e.g., your index.html)
 # to the serverless function handler.
