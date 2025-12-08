@@ -1,0 +1,17 @@
+[build]
+  # This command installs all Python packages
+  command = "pip install -r requirements.txt --target ./netlify/functions/lib && echo 'Dependencies installed'"
+  
+  # NEW: Tell Netlify to serve the static frontend from the 'public' folder
+  publish = "public" 
+
+[functions]
+  directory = "netlify/functions"
+  python_tokenizer = "lib"
+
+# This redirect maps calls from the client side (e.g., your index.html)
+# to the serverless function handler.
+[[redirects]]
+  from = "/api/*" 
+  to = "/.netlify/functions/api/:splat" 
+  status = 200
