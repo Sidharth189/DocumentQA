@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DocQA — Query</title>
+  <style>
+    :root{
+      --bg: #0f1724;
+      --card: #0b1220;
+      --accent: #7c5cff;
+      --muted: #94a3b8;
+      --glass: rgba(255,255,255,0.03);
+      --maxw: 980px;
+      --radius: 12px;
+      --gap: 16px;
+    }
+
+    /* Reset & base */
+    * { box-sizing: border-box; }
+    html,body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #e6eef8; }
+    body {
+      background: linear-gradient(180deg,#07102a 0%,#071a2b 100%);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 28px 14px;
+      min-height: 100vh;
+    }
+
+    /* Container */
+    .wrap { width: 100%; max-width: var(--maxw); padding: 0 14px; }
+
+    header { display:flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+    .logo {
+      width:56px; height:56px; border-radius:12px;
+      background: linear-gradient(135deg, var(--accent), #4dc6ff);
+      display:flex; align-items:center; justify-content:center; color:#02101b; font-weight:700;
+      flex: 0 0 56px;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    p.lead { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 6px 30px rgba(2,6,23,0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Two-column split layout */
+    .split { display: flex; gap: var(--gap); align-items: flex-start; height: fit-content; }
+    .left { flex: 1 1 0; min-width: 0; }
+    .right { flex: 0 0 420px; max-width: 420px; display: flex; flex-direction: column; }
+
+    label { display:block; font-size:13px; color: var(--muted); margin-bottom:8px; }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: var(--glass);
+      color: inherit;
+      font-size: 14px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    /* File input */
+    input[type="file"] {
+      width:100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: var(--glass);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Right column */
+    .side {
+      width: 220px;
+      flex: 0 0 220px;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .controls .btn { flex: 1 1 auto; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 0;
+      background: linear-gradient(90deg, var(--accent), #4dc6ff);
+      color: #02101b;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(124,92,255,0.18);
+      font-size: 14px;
+    }
+    .btn[disabled] { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.04);
+      box-shadow: none;
+    }
+
+    .folder-status { margin-top: 10px; font-size: 13px; min-height: 20px; color: var(--muted); }
+    .folder-status.good { color: #7cffc1; }
+    .folder-status.bad { color: #ff9a9a; }
+
+    /* Results panel: scrollable, fills right column */
+    .results {
+      border-radius: 10px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.03);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+      white-space: pre-wrap;
+      color: #dbe9ff;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      font-size: 14px;
+      line-height: 1.45;
+      height: 500px;
+      max-height: 70vh;
+    }
+
+    /* Responsive: stack columns on small screens */
+    @media (max-width: 920px) {
+      .split { flex-direction: column; }
+      .right { flex: 0 0 auto; max-width: none; width: 100%; }
+      .results { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">QA</div>
+      <div>
+        <h1>DocQA — Query</h1>
+        <p class="lead">Select a folder of documents (.pdf, .docx, .txt) and ask a question.</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="split">
+        <!-- Left: input form -->
+        <div class="left">
+          <form id="queryForm" method="post" action="/api/query" enctype="multipart/form-data" novalidate>
+            <label for="q">Question</label>
+            <textarea id="q" name="query" placeholder="Ask about the documents you uploaded..."></textarea>
+
+            <div style="margin-top:12px;">
+              <label for="folderInput">Choose documents (.pdf, .docx, .txt)</label>
+              <input type="file" id="folderInput" name="files" multiple accept=".pdf,.docx,.txt" aria-label="Choose files or folder of documents" />
+              <div id="folderName" class="folder-status">No files selected</div>
+              <div id="statusMsg" class="folder-status" aria-live="polite"></div>
+            </div>
+
+            <div class="controls">
+              <button id="runBtn" type="submit" class="btn" disabled>Run Query</button>
+              <button type="reset" class="btn ghost" id="resetBtn">Reset</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: results panel -->
+        <div class="right">
+          <div id="results" class="results" aria-live="polite">
+            After you submit the form, the server response (JSON) will be displayed here by the browser.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const ALLOWED = ['.pdf', '.docx', '.txt'];
+      const folderInput = document.getElementById('folderInput');
+      const folderNameEl = document.getElementById('folderName');
+      const statusMsgEl = document.getElementById('statusMsg');
+      const runBtn = document.getElementById('runBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const resultsEl = document.getElementById('results');
+      const form = document.getElementById('queryForm');
+
+      function getExt(filename){
+        const idx = filename.lastIndexOf('.');
+        return idx >= 0 ? filename.slice(idx).toLowerCase() : '';
+      }
+
+      function filterAcceptedFiles(fileList){
+        return Array.from(fileList || []).filter(f => {
+          const ext = getExt(f.name) || (f.webkitRelativePath ? getExt(f.webkitRelativePath) : '');
+          return ALLOWED.includes(ext);
+        });
+      }
+
+      folderInput.addEventListener('change', function(){
+        const allFiles = this.files;
+        resultsEl.textContent = 'After you submit the form, the server response (JSON) will be displayed here by the browser.';
+        if (allFiles && allFiles.length > 0) {
+          folderNameEl.textContent = 'Selected: ' + allFiles.length + ' file(s)';
+
+          const accepted = filterAcceptedFiles(allFiles);
+          if (accepted.length === 0) {
+            statusMsgEl.textContent = 'No matching files found (.pdf, .docx, .txt)';
+            statusMsgEl.classList.remove('good'); statusMsgEl.classList.add('bad');
+            runBtn.disabled = true;
+          } else {
+            statusMsgEl.textContent = 'Files accepted (' + accepted.length + ' file(s))';
+            statusMsgEl.classList.remove('bad'); statusMsgEl.classList.add('good');
+            runBtn.disabled = false;
+          }
+        } else {
+          folderNameEl.textContent = 'No files selected';
+          statusMsgEl.textContent = '';
+          statusMsgEl.classList.remove('good','bad');
+          runBtn.disabled = true;
+        }
+      });
+
+      resetBtn.addEventListener('click', function(){
+        folderInput.value = null;
+        folderNameEl.textContent = 'No files selected';
+        statusMsgEl.textContent = '';
+        statusMsgEl.classList.remove('good','bad');
+        runBtn.disabled = true;
+        resultsEl.textContent = 'After you submit the form, the server response (JSON) will be displayed here by the browser.';
+      });
+
+      // Submit via fetch and display results in the results slot
+      form.addEventListener('submit', async function(e){
+        e.preventDefault();
+
+        const accepted = filterAcceptedFiles(folderInput.files);
+        if (accepted.length === 0) {
+          statusMsgEl.textContent = 'Cannot submit — no matching files found (.pdf, .docx, .txt)';
+          statusMsgEl.classList.remove('good'); statusMsgEl.classList.add('bad');
+          folderInput.focus();
+          return;
+        }
+
+        // Build form data (includes files)
+        const formData = new FormData(form);
+
+        // UI: show loading
+        runBtn.disabled = true;
+        resultsEl.textContent = 'Processing — please wait...';
+
+        try {
+          const resp = await fetch(form.action || '/api/query', {
+            method: 'POST',
+            body: formData
+          });
+
+          const contentType = resp.headers.get('content-type') || '';
+          if (!resp.ok) {
+            let errText = await resp.text();
+            try { errText = JSON.parse(errText); } catch(_){ }
+            resultsEl.textContent = 'Error: ' + (typeof errText === 'string' ? errText : JSON.stringify(errText));
+            return;
+          }
+
+          let data;
+          if (contentType.includes('application/json')) {
+            data = await resp.json();
+          } else {
+            const text = await resp.text();
+            resultsEl.textContent = text;
+            return;
+          }
+
+          const answer = data.answer || data.result || JSON.stringify(data);
+          const chunks = data.retrieved_chunks || [];
+
+          let html = '';
+          html += '<div style="font-weight:700;margin-bottom:12px;font-size:16px;color:#7cffc1;">Answer</div>';
+          html += '<div style="margin-bottom:20px; line-height:1.7; font-size:14px;">' + formatAnswer(String(answer)) + '</div>';
+
+          if (chunks.length) {
+            html += '<div style="font-weight:700;margin-bottom:10px;font-size:14px;color:#7cffc1;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">Retrieved Chunks (' + chunks.length + ')</div>';
+            html += '<ul style="margin:8px 0 0 18px;padding:0;list-style:none;">';
+            for (const c of chunks) {
+              const src = c.metadata && c.metadata.source ? escapeHtml(String(c.metadata.source)) : 'unknown';
+              const txt = c.text ? escapeHtml(String(c.text)) : '';
+              html += `<li style="margin-bottom:16px;padding:10px;background:rgba(255,255,255,0.02);border-left:3px solid #7cffc1;border-radius:4px;"><div style="font-size:12px;color:#7cffc1;font-weight:600;margin-bottom:6px;">📄 ${src}</div><div style="white-space:pre-wrap;font-size:12px;color:#cbd5e0;">${txt}</div></li>`;
+            }
+            html += '</ul>';
+          }
+
+          resultsEl.innerHTML = html;
+
+        } catch (err) {
+          resultsEl.textContent = 'Request failed: ' + String(err);
+        } finally {
+          runBtn.disabled = false;
+        }
+      });
+
+      // Convert simple markdown/formatted text to HTML
+      function formatAnswer(text){
+        // Escape HTML first
+        text = escapeHtml(text);
+        
+        // Convert **bold** to <strong>bold</strong>
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#7cffc1;">$1</strong>');
+        
+        // Convert bullet points (- item) to list items
+        text = text.replace(/^- (.+)$/gm, '<li style="margin-left:20px;margin-bottom:6px;">$1</li>');
+        text = text.replace(/(<li[^>]*>.*?<\/li>)/s, '<ul style="margin:10px 0;padding:0;">$1</ul>');
+        
+        // Convert numbered lists
+        text = text.replace(/^\d+\. (.+)$/gm, '<li style="margin-left:20px;margin-bottom:6px;">$1</li>');
+        
+        // Convert line breaks to proper spacing
+        text = text.replace(/\n\n/g, '</p><p style="margin:12px 0;">');
+        text = text.replace(/\n(?!<)/g, '<br>');
+        
+        // Wrap in paragraph if not already
+        if (!text.startsWith('<')) {
+          text = '<p style="margin:0 0 8px 0;">' + text + '</p>';
+        }
+        
+        return text;
+      }
+
+      // Simple HTML escape for rendering
+      function escapeHtml(s){
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+    })();
+  </script>
+</body>
+</html>

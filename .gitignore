@@ -32,4 +32,9 @@ Thumbs.db
 data/temp/uploads/
 
 # Docker override / local compose files
-docker-compose.override.yml
+docker-compose.yml
+
+# Local Chroma DB directory (avoid committing DB files)
+chroma_db/
+
+uploads/
